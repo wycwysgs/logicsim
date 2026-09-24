@@ -21,6 +21,15 @@
     <!-- 主题初始化（前置执行，避免深色模式白屏闪烁 FOUC）
          支持 URL 参数强制指定主题：?theme=dark 或 ?theme=light -->
     <script>
+      // 全局错误捕获（便于诊断脚本初始化问题）
+      window.addEventListener('error', function (e) {
+        try {
+          var msg = (e.message || 'unknown') + ' @ ' + (e.filename || '').split('/').pop() + ':' + (e.lineno || 0);
+          document.documentElement.setAttribute('data-jserror', msg);
+        } catch (err) { }
+      });
+    </script>
+    <script>
       (function () {
         var html = document.documentElement;
         try {
@@ -63,7 +72,10 @@
     <link rel="preload" href="lib/TsangerYuYangT-W03.ttf" as="font" type="font/ttf" crossorigin />
 
 
-    <!-- dependencies (压缩版) -->
+    <!-- dependencies
+         joint.min.js 为 JointJS v3.3.1 官方压缩版（与完整版 joint.js 同版本、API 一致）。
+         注意：不可使用其他大版本(如 4.x)的 joint 构建，其 joint.dia.HighlighterView
+         位置不同，会导致 ViewGen.js 初始化失败、全部功能失效。 -->
     <script src="lib/jquery.min.js"></script>
     <script src="lib/lodash.min.js"></script>
     <script src="lib/backbone.js"></script>
@@ -334,6 +346,53 @@
                 status.style.color = '';
             }
         }
+
+        /* ---------- URL 参数 ?expr=<表达式> ：自动填入并生成电路图（便于分享结果） ---------- */
+        (function () {
+            var expr = null;
+            try { expr = new URLSearchParams(location.search).get('expr'); } catch (e) { }
+            if (!expr) { return; }
+
+            // 静默模式：自动执行失败时不弹窗（尤其用于分享链接与无头截图场景）
+            window.__logicSimSilent = true;
+
+            var attempts = 0;
+            function tryApplyExpr() {
+                attempts++;
+                var input = document.getElementById('ReversePol');
+                var ready = input && window.app &&
+                    typeof app.parseLogic === 'function' && typeof app.load === 'function';
+
+                if (ready) {
+                    try {
+                        input.value = expr;
+                        app.parseLogic();   // 表达式 → 图形模型
+                        app.load();         // 图形模型 → 电路图
+                        document.body.setAttribute('data-auto-expr', 'done');
+                        document.title = 'LogicSim - ' + expr;
+                    } catch (e) {
+                        document.body.setAttribute('data-auto-expr', 'error');
+                    }
+                    return;
+                }
+                // 最多重试 60 次（约 6 秒），等待 ViewGen.js 初始化完成
+                if (attempts < 60) {
+                    setTimeout(tryApplyExpr, 100);
+                } else {
+                    // 记录诊断信息，便于排查初始化失败原因
+                    var diag = 'app=' + (typeof window.app) +
+                        '|parseLogic=' + (window.app ? typeof window.app.parseLogic : 'n/a') +
+                        '|load=' + (window.app ? typeof window.app.load : 'n/a') +
+                        '|input=' + (input ? 'yes' : 'no') +
+                        '|jq=' + (typeof window.jQuery) +
+                        '|joint=' + (typeof window.joint);
+                    document.body.setAttribute('data-auto-expr', 'timeout');
+                    document.body.setAttribute('data-diag', diag);
+                }
+            }
+
+            tryApplyExpr();
+        })();
 
         /* ---------- 导出电路图为 PNG ---------- */
         function exportPNG() {
