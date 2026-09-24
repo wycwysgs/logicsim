@@ -21,7 +21,8 @@ var paper = new joint.dia.Paper({
     gridSize: 10,
     drawGrid: true,
     background: {
-        color: 'rgba(150, 250, 200, 0.3)'
+        // transparent：由 CSS 变量 --canvas-bg 统一控制，避免深色模式下画布出现色块拼接
+        color: 'transparent'
     }
 
 });
@@ -44,7 +45,8 @@ var miniPaperJ = new joint.dia.Paper({
     width: 800 * miniScale,
     height: 600 * miniScale,
     background: {
-        color: 'rgba(150, 250, 200, 0.3)'
+        // transparent：小地图背景跟随 .mini-map 容器（CSS 变量）
+        color: 'transparent'
     }
 
 });
@@ -52,12 +54,8 @@ var miniView = $("#mini-view");
 var appResize = $("#app-resize");
 
 
-miniView.css({
-    border: "2px solid #31d0c6",
-    position: "absolute",
-    backgroundColor: "rgba(250, 200, 200, 0.2)",
-    cursor: "move"
-});
+// miniView（小地图视口框）的外观统一由 style.css 的 #mini-view 规则控制，
+// 以支持深色/浅色主题切换（边框与底色使用 CSS 变量）。
 var centerPivot = {
     left: (mainContainer.width() / 2 - paperContainer.position.left) * miniScale,
     top: (mainContainer.height() / 2 - paperContainer.position.top) * miniScale
@@ -699,12 +697,15 @@ app.nodeCreate = function (theNode) {
         );
     }
     else if ("QUANT" == theNode.type) {
-        var imgPath = theNode.qtype === "∀" ? "assets/forall.svg" : "assets/exists.svg";
+        // ∀ 与 ∃ 使用不同配色，便于在电路图中一眼区分全称/存在量词
+        var isForall = (theNode.qtype === "∀");
+        var imgPath = isForall ? "assets/forall.svg" : "assets/exists.svg";
+        var quantColor = isForall ? "#f59e0b" : "#8b5cf6";
         result = app.makeNode(
             theNode.key,
             theNode.qtype || "Q",
             theNode.name || theNode.var || "",
-            "#ff8800",
+            quantColor,
             imgPath,
             [{
                 group: "in", id: "IN",
@@ -788,14 +789,21 @@ app.parseLogic = function () {
     var exprText = document.getElementById("ReversePol").value;
     var resultParsed = LogicParser(exprText);
     if ("string" == typeof (resultParsed)) {
-        status.textContent = resultParsed;
-        status.style.color = "red";
+        // 解析失败：状态栏标红 + 弹窗提示具体原因
+        status.textContent = "❌ 解析失败：" + resultParsed;
+        status.style.color = "#ef4444";
+        alert("表达式解析失败\n\n原因：" + resultParsed +
+            "\n\n请检查：\n" +
+            "1) 操作符与操作数数量是否匹配（二元操作符需两个操作数）\n" +
+            "2) 操作符是否受支持（. , < > = ∀ ∃）\n" +
+            "3) 量词写法是否正确（如 x P_x Q_x > ∀ 表示 ∀x(P(x)→Q(x))）");
     } else {
         var viewModel = ViewGen(ModelGen(resultParsed));
         origin = viewModel;
         document.getElementById("myModel").value = JSON.stringify(origin);
-        status.textContent = "逆波兰表达式解析成功，可点击「文本转图」生成电路图。";
-        status.style.color = "black";
+        status.textContent = "✅ 逆波兰表达式解析成功，可点击「文本转图」生成电路图。";
+        // 使用空字符串继承主题文字色（避免深色模式下黑字不可见）
+        status.style.color = "";
     }
 };
 

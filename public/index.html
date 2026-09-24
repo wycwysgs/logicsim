@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 
 <head>
     <meta content="text/html;charset=utf-8" http-equiv="content-type" />
@@ -18,16 +18,22 @@
     <meta property="og:description" content="逆波兰逻辑表达式 → 逻辑电路图。支持命题逻辑与谓词逻辑量词（∀ ∃）。" />
     <meta property="og:type" content="website" />
 
-    <!-- 主题初始化（前置执行，避免深色模式白屏闪烁 FOUC） -->
+    <!-- 主题初始化（前置执行，避免深色模式白屏闪烁 FOUC）
+         支持 URL 参数强制指定主题：?theme=dark 或 ?theme=light -->
     <script>
       (function () {
         var html = document.documentElement;
         try {
+          var urlTheme = new URLSearchParams(location.search).get('theme');
+          if (urlTheme === 'dark' || urlTheme === 'light') {
+            if (urlTheme === 'dark') { html.classList.add('dark'); }
+            return;
+          }
           var saved = localStorage.getItem('theme');
           if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             html.classList.add('dark');
           }
-        } catch (e) { /* localStorage 不可用时忽略 */ }
+        } catch (e) { /* localStorage / URLSearchParams 不可用时忽略 */ }
       })();
     </script>
 
@@ -37,20 +43,27 @@
       tailwind.config = {
         darkMode: 'class',
         theme: {
-          extend: {}
+          extend: {
+            colors: {
+              brand: {
+                50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
+                400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
+                800: '#3730a3', 900: '#312e81'
+              }
+            }
+          }
         }
       }
     </script>
     <link rel="stylesheet" type="text/css" href="lib/joint.css" />
     <link href="lib/select2.min.css" rel="stylesheet" />
-    <link href="lib/w3.css" rel="stylesheet" />
     <link rel="stylesheet" type="text/css" href="style.css" />
 
-    <!-- 字体预加载（减少首屏文字闪烁） -->
+    <!-- 字体预加载 -->
     <link rel="preload" href="lib/TsangerYuYangT-W03.ttf" as="font" type="font/ttf" crossorigin />
 
 
-    <!-- dependencies (使用压缩版减小体积) -->
+    <!-- dependencies (压缩版) -->
     <script src="lib/jquery.min.js"></script>
     <script src="lib/lodash.min.js"></script>
     <script src="lib/backbone.js"></script>
@@ -62,145 +75,228 @@
 </head>
 
 <body>
-    <!-- content -->
     <div class="joint-app">
-        <!-- 主题切换按钮 -->
-        <button id="themeToggle" class="fixed top-2 right-2 z-50 p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200" onclick="toggleTheme()" title="切换深色/浅色模式" aria-label="切换深色或浅色主题" aria-live="polite">
-            <span id="themeIcon" aria-hidden="true">🌙</span>
-        </button>
-        <div class="app-header">
-            <div class="mini-map">
-                <div id="mini-paper"></div>
-                <div id="mini-view">
-                    <div id="mini-resize"></div>
+
+        <!-- ==================== 顶部区域 ==================== -->
+        <header class="app-header">
+            <!-- 左上：小地图（300×150，尺寸与 ViewGen.js 内的缩放基准保持一致） -->
+            <div class="header-left">
+                <div class="mini-map" title="小地图导航（拖动可移动视图）">
+                    <div id="mini-paper"></div>
+                    <div id="mini-view">
+                        <div id="mini-resize"></div>
+                    </div>
                 </div>
             </div>
+
+            <!-- 右侧：工具区 -->
             <div class="title-container">
-                <div style="width:33%;float:left;overflow:auto;">
-                    <div class="w3-row" style="margin:1px">
-                        <div class="w3-third w3-btn w3-light-green  w3-hover-green"
-                            style="position: relative;overflow: hidden;cursor:pointer">
-                            <img src="assets/icons/save2.svg" width="15" height="15" class="w3-margin-right" />
-                            <span>载入文本</span>
-                            <input type="file" style="position: absolute;
-                            top: 0;
-                            right: 0;
-                            margin: 0;
-                            padding: 0;
-                            font-size: 20px;
-                            cursor: pointer;
-                            opacity: 0;
-                            filter: alpha(opacity=0)" id="fileToLoad" />
-                        </div>
-                        <button class="w3-third w3-btn w3-light-blue  w3-hover-blue" onclick="app.saveTextAsFile()"><img
-                                src="assets/icons/upload.svg" width="15" height="15"
-                                class="w3-margin-right" />保存文本</button>
-                        <input class="w3-third w3-input w3-center" id="inputFileNameToSaveAs" value="默认保存名称"></input>
+                <!-- 第一行：品牌 + 文件操作 -->
+                <div class="toolbar-row">
+                    <div class="brand">
+                        <span class="brand-logo">⚡</span>
+                        <span class="brand-name">LogicSim</span>
                     </div>
 
+                    <span class="toolbar-divider"></span>
 
-                    <textarea style="width:100%;height:60px" id="ReversePol"></textarea>
+                    <label class="btn btn-ghost btn-sm" title="从文本文件载入逆波兰表达式">
+                        <img src="assets/icons/save2.svg" alt="" class="btn-icon" />
+                        <span>载入</span>
+                        <input type="file" id="fileToLoad" class="hidden-file" />
+                    </label>
+                    <button class="btn btn-ghost btn-sm" onclick="app.saveTextAsFile()" title="把表达式保存为文本文件">
+                        <img src="assets/icons/upload.svg" alt="" class="btn-icon" />
+                        <span>保存</span>
+                    </button>
+                    <input class="input input-sm" id="inputFileNameToSaveAs" value="默认保存名称" title="保存的文件名" />
 
-                    <button class="w3-block w3-btn w3-yellow  w3-hover-deep-orange w3-round-large"
-                        onclick="app.parseLogic()">解析文本</button>
+                    <div class="toolbar-spacer"></div>
 
+                    <button class="btn btn-ghost btn-sm" onclick="exportPNG()" title="把当前电路图导出为 PNG 图片">
+                        <span class="btn-emoji">🖼️</span>
+                        <span>导出 PNG</span>
+                    </button>
+
+                    <button id="themeToggle" class="btn-icon-only" onclick="toggleTheme()" title="切换深色/浅色模式"
+                        aria-label="切换深色或浅色主题">
+                        <span id="themeIcon" aria-hidden="true">🌙</span>
+                    </button>
                 </div>
-                <div style="width:65%;float:left">
-                    <table style="width:100%">
-                        <tr>
-                            <td colspan="2">
-                                <textarea id="myModel" style="width:100%;height:100px">
-                            {
-                                nodeArray: [],
-                                linkArray: []
-                            }
-                        </textarea>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <button id="LoadButton" class="w3-block w3-btn w3-light-green w3-hover-green"
-                                    onclick="app.load()"><img src="assets/icons/save2.svg" width="15" height="15"
-                                        class="w3-margin-right" />文本转图</button>
-                            </td>
-                            <td>
-                                <button id="SaveButton" class="w3-block w3-btn w3-light-blue  w3-hover-blue"
-                                    onclick="app.save()"><img src="assets/icons/upload.svg" width="15" height="15"
-                                        class="w3-margin-right" />图转文本</button>
-                            </td>
-                        </tr>
-                    </table>
+
+                <!-- 第二行：表达式输入 + 解析 -->
+                <div class="expr-row">
+                    <div class="expr-input-wrap">
+                        <label class="field-label" for="ReversePol">
+                            逆波兰逻辑表达式
+                            <span class="hint">支持 . , &lt; &gt; = ∀ ∃ 共七种操作符</span>
+                        </label>
+                        <textarea id="ReversePol" class="textarea textarea-expr" spellcheck="false"
+                            placeholder="例如：x P_x Q_x > ∀"></textarea>
+                    </div>
+                    <button class="btn btn-primary btn-parse" onclick="app.parseLogic()" title="解析表达式为图形模型">
+                        <span>解析文本</span>
+                    </button>
+                </div>
+
+                <!-- 第三行：JSON 模型 + 图形操作 -->
+                <div class="model-row">
+                    <div class="model-input-wrap">
+                        <label class="field-label" for="myModel">
+                            图形模型 (JSON)
+                            <span class="hint">可手动编辑后点击「文本转图」</span>
+                        </label>
+                        <textarea id="myModel" class="textarea textarea-model" spellcheck="false">{
+    "nodeArray": [],
+    "linkArray": []
+}</textarea>
+                    </div>
+                    <div class="model-actions">
+                        <button id="LoadButton" class="btn btn-success btn-block" onclick="app.load()"
+                            title="根据 JSON 模型渲染电路图">
+                            <img src="assets/icons/save2.svg" alt="" class="btn-icon" />
+                            <span>文本转图</span>
+                        </button>
+                        <button id="SaveButton" class="btn btn-ghost btn-block" onclick="app.save()"
+                            title="把当前电路图导出为 JSON 模型">
+                            <img src="assets/icons/upload.svg" alt="" class="btn-icon" />
+                            <span>图转文本</span>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </header>
 
+        <!-- ==================== 主体区域 ==================== -->
         <div class="app-body">
-            <div class="left-container">
+            <div class="left-container"></div>
 
-            </div>
+            <!-- 画布 -->
             <div class="main-container">
                 <div id="paper-container">
-                    <div id="paper" style="cursor:grab">
-                    </div>
+                    <div id="paper"></div>
                 </div>
             </div>
-            <div id="app-resize">
-                <div style="position:absolute;left:-35px;background-image:url(assets/box-arrow-in-right.svg);background-size:100%;width:30px;height:30px;"
-                    onclick="
-                app.ResizeBlock()
-                ">
 
-                </div>
+            <!-- 拖拽分割条 -->
+            <div id="app-resize" title="拖动调整面板宽度">
+                <div class="resize-handle" onclick="app.ResizeBlock()"></div>
             </div>
-            <div class="right-container">
-                <div class="w3-row">
-                    <div class="w3-third">
-                        元素名称：
+
+            <!-- 右侧面板 -->
+            <aside class="right-container">
+                <!-- 元素属性卡片 -->
+                <section class="panel-card">
+                    <h2 class="panel-title">
+                        <span class="panel-icon">✏️</span>
+                        元素属性
+                    </h2>
+                    <div class="field">
+                        <label class="field-label" for="ERName">元素名称</label>
+                        <input class="input" type="text" id="ERName" placeholder="选中画布元素后可编辑" />
                     </div>
-                    <input class="w3-twothird" type="text" id="ERName" />
-                </div>
-                <div class="w3-row">
-                    <div class="w3-third">
-                        元素备注：
+                    <div class="field">
+                        <label class="field-label" for="ERMemo">元素备注</label>
+                        <textarea class="textarea textarea-memo" id="ERMemo" placeholder="添加备注说明…"></textarea>
                     </div>
-                    <textarea class="w3-twothird" id="ERMemo">
-                    </textarea>
-                </div>
-                <button id="ERSetName" class="w3-block w3-btn w3-yellow  w3-hover-deep-orange w3-round-large"
-                    onclick="app.ChangeName()">保存修改</button>
-                <div>
-                    <h3 class="font-bold mb-2">📖 语法说明</h3>
-                    <p class="text-sm mb-2">在"解析文本"按钮上面的文本框内输入"逆波兰逻辑表达式"。</p>
-                    <p class="text-sm mb-2">"逆波兰逻辑表达式"支持<span class="font-bold">七种</span>逻辑操作符：</p>
-                    <div class="mb-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-sm">
-                        <div><span class="font-bold">"."</span>："a b ." 代表 a AND b（逻辑与）</div>
-                        <div><span class="font-bold">"<"</span>："a <" 代表 NOT a（逻辑非）</div>
-                        <div><span class="font-bold">","</span>："a b ," 代表 a OR b（逻辑或）</div>
-                        <div><span class="font-bold">"="</span>："a b =" 代表 a ↔ b（等价/同或）</div>
-                        <div><span class="font-bold">">"</span>："a b >" 代表 a → b（推出）</div>
-                        <div><span class="font-bold text-green-600">"∀"</span>："x φ ∀" 代表 ∀x φ（全称量词）</div>
-                        <div><span class="font-bold text-blue-600">"∃"</span>："x φ ∃" 代表 ∃x φ（存在量词）</div>
+                    <button id="ERSetName" class="btn btn-primary btn-block" onclick="app.ChangeName()">
+                        <span>保存修改</span>
+                    </button>
+                </section>
+
+                <!-- 语法说明卡片 -->
+                <section class="panel-card">
+                    <h2 class="panel-title">
+                        <span class="panel-icon">📖</span>
+                        语法说明
+                    </h2>
+                    <p class="panel-text">支持<span class="text-emphasis">七种</span>逻辑操作符（逆波兰式）：</p>
+
+                    <div class="syntax-grid">
+                        <div class="syntax-item">
+                            <code>a b .</code>
+                            <span>逻辑与 AND</span>
+                        </div>
+                        <div class="syntax-item">
+                            <code>a b ,</code>
+                            <span>逻辑或 OR</span>
+                        </div>
+                        <div class="syntax-item">
+                            <code>a &lt;</code>
+                            <span>逻辑非 NOT</span>
+                        </div>
+                        <div class="syntax-item">
+                            <code>a b &gt;</code>
+                            <span>推出 IMPLIES</span>
+                        </div>
+                        <div class="syntax-item">
+                            <code>a b =</code>
+                            <span>等价 EQUIV</span>
+                        </div>
+                        <div class="syntax-item syntax-new">
+                            <code>x φ ∀</code>
+                            <span>全称量词 ∀x φ</span>
+                        </div>
+                        <div class="syntax-item syntax-new">
+                            <code>x φ ∃</code>
+                            <span>存在量词 ∃x φ</span>
+                        </div>
                     </div>
-                    <p class="text-sm mb-2 font-bold">💡 谓词表示法：</p>
-                    <p class="text-sm mb-2">谓词使用 <code>_</code> 连接参数，如：<code>P_x</code> 表示 P(x)，<code>R_x_y</code> 表示 R(x,y)</p>
-                    <p class="text-sm mb-2">逆波兰逻辑表达式组合的举例说明：</p>
-                    <div class="mb-3 p-2 bg-green-50 dark:bg-green-900 rounded text-sm">
-                        <div>"a b . fe >" → a 与 b 推出了 fe</div>
-                        <div>"a b . fe ge > =" → a 与 b 等价于 fe 推出了 ge</div>
-                        <div class="text-green-600 dark:text-green-300">"x P_x Q_x > ∀" → ∀x(P(x)→Q(x))</div>
-                        <div class="text-blue-600 dark:text-blue-300">"x P_x ∃" → ∃x P(x)</div>
-                        <div class="text-purple-600 dark:text-purple-300">"x y R_x_y ∃ ∀" → ∀x∃y R(x,y)</div>
+
+                    <p class="panel-text panel-tip">
+                        💡 谓词用 <code class="inline-code">_</code> 连接参数：
+                        <code class="inline-code">P_x</code> 表示 P(x)，
+                        <code class="inline-code">R_x_y</code> 表示 R(x,y)
+                    </p>
+
+                    <h3 class="panel-subtitle">示例（点击直接填入输入框）</h3>
+                    <div class="example-list">
+                        <div class="example-item" onclick="fillExample('a b . fe >')" title="点击填入输入框">
+                            <code>a b . fe &gt;</code><span>a 与 b 推出 fe</span>
+                            <span class="example-fill-hint">填入</span>
+                        </div>
+                        <div class="example-item" onclick="fillExample('a b . fe ge > =')" title="点击填入输入框">
+                            <code>a b . fe ge &gt; =</code><span>a 与 b 等价于 fe 推出 ge</span>
+                            <span class="example-fill-hint">填入</span>
+                        </div>
+                        <div class="example-item" onclick="fillExample('a b , c .')" title="点击填入输入框">
+                            <code>a b , c .</code><span>(a OR b) AND c</span>
+                            <span class="example-fill-hint">填入</span>
+                        </div>
+                        <div class="example-item example-new" onclick="fillExample('x P_x Q_x > ∀')"
+                            title="点击填入输入框（全称量词）">
+                            <code>x P_x Q_x &gt; ∀</code><span>∀x(P(x)→Q(x))</span>
+                            <span class="example-fill-hint">填入</span>
+                        </div>
+                        <div class="example-item example-new" onclick="fillExample('x P_x ∃')"
+                            title="点击填入输入框（存在量词）">
+                            <code>x P_x ∃</code><span>∃x P(x)</span>
+                            <span class="example-fill-hint">填入</span>
+                        </div>
+                        <div class="example-item example-new" onclick="fillExample('x y R_x_y ∃ ∀')"
+                            title="点击填入输入框（嵌套量词）">
+                            <code>x y R_x_y ∃ ∀</code><span>∀x∃y R(x,y)</span>
+                            <span class="example-fill-hint">填入</span>
+                        </div>
                     </div>
-                    <p class="text-sm mb-2">之后点击"解析文本"按钮，将"逆波兰逻辑表达式"转换为适合图形表示的 JSON 格式，之后再点击"文本转图"，得到最终的正规图形表示。</p>
-                </div>
-            </div>
-            <div class="bottom-container">
-                <p id="status">Diagram Model loaded from Json Format.</p>
-            </div>
+
+                    <p class="panel-text panel-flow">
+                        使用流程：输入表达式 → <span class="text-emphasis">解析文本</span>
+                        → <span class="text-emphasis">文本转图</span> → 生成正规电路图
+                    </p>
+                </section>
+            </aside>
+
+            <!-- 底部状态栏 -->
+            <footer class="bottom-container">
+                <span class="status-dot"></span>
+                <p id="status">等待输入逆波兰逻辑表达式…</p>
+            </footer>
         </div>
     </div>
+
     <script>
-        // 主题切换功能
+        // 主题切换
         function toggleTheme() {
             var html = document.documentElement;
             var isDark = html.classList.toggle('dark');
@@ -216,7 +312,7 @@
             }
         }
 
-        // 监听系统主题变化（用户未手动选择时跟随系统）
+        // 跟随系统主题变化（用户未手动选择时）
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
             var saved = null;
             try { saved = localStorage.getItem('theme'); } catch (err) { }
@@ -225,11 +321,86 @@
                 syncThemeIcon();
             }
         });
+
+        /* ---------- 点击示例填入输入框 ---------- */
+        function fillExample(expr) {
+            var input = document.getElementById('ReversePol');
+            if (!input) { return; }
+            input.value = expr;
+            input.focus();
+            var status = document.getElementById('status');
+            if (status) {
+                status.textContent = '已填入示例「' + expr + '」，点击「解析文本」生成电路图。';
+                status.style.color = '';
+            }
+        }
+
+        /* ---------- 导出电路图为 PNG ---------- */
+        function exportPNG() {
+            try {
+                var svgEl = document.querySelector('#paper svg');
+                if (!svgEl) {
+                    alert('画布为空。\n\n请先输入表达式并依次点击「解析文本」→「文本转图」生成电路图。');
+                    return;
+                }
+
+                var isDark = document.documentElement.classList.contains('dark');
+                var width = parseFloat(svgEl.getAttribute('width')) || svgEl.clientWidth || 800;
+                var height = parseFloat(svgEl.getAttribute('height')) || svgEl.clientHeight || 600;
+
+                var svgString = new XMLSerializer().serializeToString(svgEl);
+                if (svgString.indexOf('xmlns=') === -1) {
+                    svgString = svgString.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+                }
+
+                var scale = 2; // 2 倍分辨率，导出更清晰
+                var blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+                var url = URL.createObjectURL(blob);
+                var img = new Image();
+
+                img.onload = function () {
+                    var canvas = document.createElement('canvas');
+                    canvas.width = Math.round(width * scale);
+                    canvas.height = Math.round(height * scale);
+                    var ctx = canvas.getContext('2d');
+
+                    // 填充背景色（跟随主题）
+                    ctx.fillStyle = isDark ? '#0f172a' : '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    URL.revokeObjectURL(url);
+
+                    canvas.toBlob(function (pngBlob) {
+                        var stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+                        var a = document.createElement('a');
+                        a.href = URL.createObjectURL(pngBlob);
+                        a.download = 'logicsim-' + stamp + '.png';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+
+                        var status = document.getElementById('status');
+                        if (status) {
+                            status.textContent = '✅ 电路图已导出为 PNG 图片（' + canvas.width + '×' + canvas.height + '）。';
+                            status.style.color = '';
+                        }
+                    }, 'image/png');
+                };
+
+                img.onerror = function () {
+                    URL.revokeObjectURL(url);
+                    alert('导出失败：无法渲染画布 SVG。\n\n请确认已点击「文本转图」生成电路图后重试。');
+                };
+
+                img.src = url;
+            } catch (e) {
+                alert('导出 PNG 出错：' + e.message);
+            }
+        }
     </script>
-    <script src="ViewGen.js">
-    </script>
+    <script src="ViewGen.js"></script>
     <script>
-        // 页面加载后同步主题图标
         syncThemeIcon();
     </script>
 </body>
