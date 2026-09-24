@@ -697,7 +697,24 @@ app.nodeCreate = function (theNode) {
             { group: "out", id: "P", attrs: { portLabel: { text: "P" } } }]
 
         );
-    };
+    }
+    else if ("QUANT" == theNode.type) {
+        var imgPath = theNode.qtype === "∀" ? "assets/forall.svg" : "assets/exists.svg";
+        result = app.makeNode(
+            theNode.key,
+            theNode.qtype || "Q",
+            theNode.name || theNode.var || "",
+            "#ff8800",
+            imgPath,
+            [{
+                group: "in", id: "IN",
+                attrs: { portLabel: { text: "IN" } }
+            },
+            {
+                group: "out", id: "OUT", attrs: { portLabel: { text: "OUT" } }
+            }]
+        );
+    }
     return result;
 };
 app.linkCreate = function (theNode) {
@@ -746,6 +763,13 @@ app.ELDump = function (JsonCells) {
                 result.nodeArray.push({
                     "key":oneElem.id,
                     "type":"SEL"
+                });
+            }else if("∀" == oneElem.attrs.label.text || "∃" == oneElem.attrs.label.text){
+                result.nodeArray.push({
+                    "key":oneElem.id,
+                    "type":"QUANT",
+                    "qtype":oneElem.attrs.label.text,
+                    "var":oneElem.attrs.name.text
                 });
             }else{
                 result.nodeArray.push({

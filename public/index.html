@@ -5,6 +5,16 @@
     <meta content="text/html;charset=utf-8" http-equiv="content-type" />
     <meta content="IE=edge" http-equiv="X-UA-Compatible" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {}
+        }
+      }
+    </script>
     <link rel="stylesheet" type="text/css" href="lib/joint.css" />
     <link href="lib/select2.min.css" rel="stylesheet" />
     <link href="lib/w3.css" rel="stylesheet" />
@@ -25,6 +35,10 @@
 <body>
     <!-- content -->
     <div class="joint-app">
+        <!-- 主题切换按钮 -->
+        <button id="themeToggle" class="fixed top-2 right-2 z-50 p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200" onclick="toggleTheme()" title="切换深色/浅色模式">
+            <span id="themeIcon">🌙</span>
+        </button>
         <div class="app-header">
             <div class="mini-map">
                 <div id="mini-paper"></div>
@@ -126,22 +140,29 @@
                 <button id="ERSetName" class="w3-block w3-btn w3-yellow  w3-hover-deep-orange w3-round-large"
                     onclick="app.ChangeName()">保存修改</button>
                 <div>
-                    在“解析文本”按钮上面的文本框内输入“逆波兰逻辑表达式”。<br/>
-                    “逆波兰逻辑表达式”支持五种逻辑操作符：<br/>
-                    {<br/>
-                    “.”：“a b .”代表“a”和“b”的逻辑与，<br/>
-                    “<”：“a <”代表“a”的逻辑非，<br/>
-                    “,”：“a b ,”代表“a”和“b”的逻辑或，<br/>
-                    “=”：“a b =”代表“a”和“b”的逻辑等价/同或<br/>
-                    “>”：“a b >”代表“a”和“b”的逻辑推出，<br/>
-                      }。<br/>
-                    逆波兰逻辑表达式组合的举例说明：<br/>
-                    {<br/>
-                    “a b . fe >”即代表逻辑表达“a 与 b   推出了   fe”，<br/>
-                    “a b . fe ge > =”即代表逻辑表达“a 与 b  等价于  fe 推出了 ge”<br/>
-                    }。<br/>
-                    之后点击“解析文本”按钮，将“逆波兰逻辑表达式”转换为适合图形表示的 JSON 格式，<br/>
-                    之后再点击“解析文本”按钮旁的“文本转图”，得到最终的正规图形表示。
+                    <h3 class="font-bold mb-2">📖 语法说明</h3>
+                    <p class="text-sm mb-2">在"解析文本"按钮上面的文本框内输入"逆波兰逻辑表达式"。</p>
+                    <p class="text-sm mb-2">"逆波兰逻辑表达式"支持<span class="font-bold">七种</span>逻辑操作符：</p>
+                    <div class="mb-3 p-2 bg-gray-100 dark:bg-gray-700 rounded text-sm">
+                        <div><span class="font-bold">"."</span>："a b ." 代表 a AND b（逻辑与）</div>
+                        <div><span class="font-bold">"<"</span>："a <" 代表 NOT a（逻辑非）</div>
+                        <div><span class="font-bold">","</span>："a b ," 代表 a OR b（逻辑或）</div>
+                        <div><span class="font-bold">"="</span>："a b =" 代表 a ↔ b（等价/同或）</div>
+                        <div><span class="font-bold">">"</span>："a b >" 代表 a → b（推出）</div>
+                        <div><span class="font-bold text-green-600">"∀"</span>："x φ ∀" 代表 ∀x φ（全称量词）</div>
+                        <div><span class="font-bold text-blue-600">"∃"</span>："x φ ∃" 代表 ∃x φ（存在量词）</div>
+                    </div>
+                    <p class="text-sm mb-2 font-bold">💡 谓词表示法：</p>
+                    <p class="text-sm mb-2">谓词使用 <code>_</code> 连接参数，如：<code>P_x</code> 表示 P(x)，<code>R_x_y</code> 表示 R(x,y)</p>
+                    <p class="text-sm mb-2">逆波兰逻辑表达式组合的举例说明：</p>
+                    <div class="mb-3 p-2 bg-green-50 dark:bg-green-900 rounded text-sm">
+                        <div>"a b . fe >" → a 与 b 推出了 fe</div>
+                        <div>"a b . fe ge > =" → a 与 b 等价于 fe 推出了 ge</div>
+                        <div class="text-green-600 dark:text-green-300">"x P_x Q_x > ∀" → ∀x(P(x)→Q(x))</div>
+                        <div class="text-blue-600 dark:text-blue-300">"x P_x ∃" → ∃x P(x)</div>
+                        <div class="text-purple-600 dark:text-purple-300">"x y R_x_y ∃ ∀" → ∀x∃y R(x,y)</div>
+                    </div>
+                    <p class="text-sm mb-2">之后点击"解析文本"按钮，将"逆波兰逻辑表达式"转换为适合图形表示的 JSON 格式，之后再点击"文本转图"，得到最终的正规图形表示。</p>
                 </div>
             </div>
             <div class="bottom-container">
@@ -149,6 +170,31 @@
             </div>
         </div>
     </div>
+    <script>
+        // 主题切换功能
+        function toggleTheme() {
+            var html = document.documentElement;
+            var icon = document.getElementById('themeIcon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.classList.add('dark');
+                icon.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // 页面加载时检查保存的主题
+        (function() {
+            var savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('themeIcon').textContent = '☀️';
+            }
+        })();
+    </script>
     <script src="ViewGen.js">
     </script>
 </body>
