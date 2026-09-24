@@ -436,56 +436,86 @@
                     return;
                 }
 
-                var isDark = document.documentElement.classList.contains('dark');
-                var width = parseFloat(svgEl.getAttribute('width')) || svgEl.clientWidth || 800;
-                var height = parseFloat(svgEl.getAttribute('height')) || svgEl.clientHeight || 600;
+                var statusEl = document.getElementById('status');
 
-                var svgString = new XMLSerializer().serializeToString(svgEl);
-                if (svgString.indexOf('xmlns=') === -1) {
-                    svgString = svgString.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+                // 保存当前视图状态（导出后需恢复，避免影响用户正在查看的视野）
+                var savedScale = paper.scale();
+                var savedTranslate = paper.translate();
+
+                function restoreView() {
+                    try {
+                        paper.scale(savedScale.sx, savedScale.sy);
+                        paper.translate(savedTranslate.tx, savedTranslate.ty);
+                    } catch (e) { }
                 }
 
-                var scale = 2; // 2 倍分辨率，导出更清晰
-                var blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-                var url = URL.createObjectURL(blob);
-                var img = new Image();
+                if (statusEl) {
+                    statusEl.textContent = '⏳ 正在导出 PNG（自动适配全部内容）…';
+                    statusEl.style.color = '';
+                }
 
-                img.onload = function () {
-                    var canvas = document.createElement('canvas');
-                    canvas.width = Math.round(width * scale);
-                    canvas.height = Math.round(height * scale);
-                    var ctx = canvas.getContext('2d');
+                // 关键：先把视图缩放到完整容纳所有图形内容。
+                // 否则 paper 只覆盖当前可见区域，导出的图片会缺失超出部分。
+                paper.scaleContentToFit({ padding: 30, minScale: 0.02, maxScale: 1 });
 
-                    // 填充背景色（跟随主题）
-                    ctx.fillStyle = isDark ? '#0f172a' : '#ffffff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    URL.revokeObjectURL(url);
+                // 等待 JointJS 完成重新渲染后再取 SVG
+                setTimeout(function () {
+                    try {
+                        var isDark = document.documentElement.classList.contains('dark');
+                        var width = parseFloat(svgEl.getAttribute('width')) || svgEl.clientWidth || 800;
+                        var height = parseFloat(svgEl.getAttribute('height')) || svgEl.clientHeight || 600;
 
-                    canvas.toBlob(function (pngBlob) {
-                        var stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-                        var a = document.createElement('a');
-                        a.href = URL.createObjectURL(pngBlob);
-                        a.download = 'logicsim-' + stamp + '.png';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
-
-                        var status = document.getElementById('status');
-                        if (status) {
-                            status.textContent = '✅ 电路图已导出为 PNG 图片（' + canvas.width + '×' + canvas.height + '）。';
-                            status.style.color = '';
+                        var svgString = new XMLSerializer().serializeToString(svgEl);
+                        if (svgString.indexOf('xmlns=') === -1) {
+                            svgString = svgString.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
                         }
-                    }, 'image/png');
-                };
 
-                img.onerror = function () {
-                    URL.revokeObjectURL(url);
-                    alert('导出失败：无法渲染画布 SVG。\n\n请确认已点击「文本转图」生成电路图后重试。');
-                };
+                        var scale = 2; // 2 倍分辨率
+                        var blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+                        var url = URL.createObjectURL(blob);
+                        var img = new Image();
 
-                img.src = url;
+                        img.onload = function () {
+                            var canvas = document.createElement('canvas');
+                            canvas.width = Math.round(width * scale);
+                            canvas.height = Math.round(height * scale);
+                            var ctx = canvas.getContext('2d');
+
+                            ctx.fillStyle = isDark ? '#0f172a' : '#ffffff';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            URL.revokeObjectURL(url);
+
+                            canvas.toBlob(function (pngBlob) {
+                                var stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+                                var a = document.createElement('a');
+                                a.href = URL.createObjectURL(pngBlob);
+                                a.download = 'logicsim-' + stamp + '.png';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+
+                                restoreView();
+                                if (statusEl) {
+                                    statusEl.textContent = '✅ 电路图已导出为 PNG（' + canvas.width + '×' + canvas.height + '，含全部内容）。';
+                                    statusEl.style.color = '';
+                                }
+                            }, 'image/png');
+                        };
+
+                        img.onerror = function () {
+                            URL.revokeObjectURL(url);
+                            restoreView();
+                            alert('导出失败：无法渲染画布 SVG。\n\n请确认已点击「文本转图」生成电路图后重试。');
+                        };
+
+                        img.src = url;
+                    } catch (e) {
+                        restoreView();
+                        alert('导出出错：' + e.message);
+                    }
+                }, 250);
             } catch (e) {
                 alert('导出 PNG 出错：' + e.message);
             }
