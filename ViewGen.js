@@ -794,7 +794,7 @@ app.parseLogic = function () {
         var viewModel = ViewGen(ModelGen(resultParsed));
         origin = viewModel;
         document.getElementById("myModel").value = JSON.stringify(origin);
-        status.textContent = "Reverse Polish Expression has been parsed.";
+        status.textContent = "逆波兰表达式解析成功，可点击「文本转图」生成电路图。";
         status.style.color = "black";
     }
 };
@@ -830,14 +830,14 @@ app.updateGraph = function () {
 app.load=function() {
     try {
         origin = JSON.parse(document.getElementById("myModel").value);
-        status.textContent = "Diagram Model Loaded from JSON format.";
+        status.textContent = "图形模型已从 JSON 数据加载。";
     }
     catch (error) {
         origin = {
             nodeArray: [],
             linkArray: []
         };
-        status.textContent = "JSON format Error, Use Empty Format.";
+        status.textContent = "JSON 格式错误，已重置为空白图形模型。";
         document.getElementById("myModel").value = JSON.stringify(origin);
     }
     //ERUpdateOption();
@@ -848,7 +848,7 @@ app.load=function() {
 app.save=function() {
     origin = app.ELDump(graph.toJSON().cells);
     document.getElementById("myModel").value = JSON.stringify(origin);
-    status.textContent = "Diagram Model Saved in JSON format.";
+    status.textContent = "图形模型已保存为 JSON 格式。";
 
 };
 

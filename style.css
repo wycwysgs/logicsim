@@ -3,6 +3,8 @@
     src: url('./lib/TsangerYuYangT-W03.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
+    /* 字体加载期间先用系统字体渲染，避免文字长时间空白 */
+    font-display: swap;
 }
 
 
@@ -201,61 +203,50 @@ background-color: #fff;
     color: #e5e7eb;
 }
 
-/* 语法提示卡片样式 */
-.syntax-card {
-    background-color: #f3f4f6;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 10px;
-    border-left: 4px solid #6366f1;
-    font-size: 13px;
-    line-height: 1.6;
-    transition: background-color 0.3s ease;
+/* 响应式：窄屏（移动端）下隐藏固定宽度的侧栏，保证主画布可用 */
+@media (max-width: 900px) {
+    .mini-map {
+        display: none;
+    }
+
+    .title-container {
+        left: 0;
+    }
+
+    .right-container {
+        width: 220px;
+    }
+
+    #app-resize {
+        right: 220px;
+    }
+
+    .main-container {
+        right: 226px;
+    }
 }
 
-.dark .syntax-card {
-    background-color: #374151;
-    border-left-color: #8181f5;
-}
+@media (max-width: 640px) {
+    .app-header {
+        height: auto;
+        min-height: 150px;
+    }
 
-.syntax-card h4 {
-    color: #4f46e5;
-    margin-bottom: 6px;
-}
+    .right-container {
+        position: relative;
+        width: 100%;
+        bottom: auto;
+        border-top: 2px solid #ee5d70;
+    }
 
-.dark .syntax-card h4 {
-    color: #8181f5;
-}
+    #app-resize {
+        display: none;
+    }
 
-.syntax-card code {
-    background-color: #e0e7ff;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: monospace;
-    color: #3730a3;
-    font-size: 12px;
-}
-
-.dark .syntax-card code {
-    background-color: #312e81;
-    color: #c7d2fe;
-}
-
-.syntax-card .example-row {
-    display: flex;
-    align-items: center;
-    margin: 4px 0;
-    gap: 8px;
-}
-
-.syntax-card .example-row .label {
-    min-width: 60px;
-    font-weight: bold;
-    color: #6b7280;
-}
-
-.dark .syntax-card .example-row .label {
-    color: #9ca3af;
+    .main-container {
+        right: 10px;
+        bottom: 300px;
+    }
 }
 
 
