@@ -1,0 +1,19 @@
+{
+  "name": "logicsim-quantifier",
+  "version": "1.0.0",
+  "description": "Logic Simulator with Quantifier Support (∀ ∃)",
+  "private": true,
+  "scripts": {
+    "dev": "http-server public -p 3000",
+    "start": "http-server public -p 3000"
+  },
+  "keywords": [
+    "logic",
+    "simulator",
+    "quantifier",
+    "predicate",
+    "circuit"
+  ],
+  "author": "zjh",
+  "license": "MIT"
+}
