@@ -54,6 +54,22 @@ function LogicParser(npn) {
             }
         }
     };
+    // 全称量词 ∀x φ : 变量x, 公式φ
+    var forallM = function (x, a) {
+        return {
+            "Q": "∀",
+            "V": x,
+            "S": a
+        };
+    };
+    // 存在量词 ∃x φ : 变量x, 公式φ
+    var existsM = function (x, a) {
+        return {
+            "Q": "∃",
+            "V": x,
+            "S": a
+        };
+    };
     var state = 0;
     var nstate = 0;
     /* state is
@@ -63,11 +79,13 @@ function LogicParser(npn) {
        ".": "and",
        ",": "or",
        ">": "infer",
-       "<": "not"
-       "=": "equal"
+       "<": "not",
+       "=": "equal",
+       "∀": "forall",
+       "∃": "exists"
      */
     if ("" == npn) { return "Empty String!" };
-    for (var e = [], s = npn.split(/(\.|,|<|>|=|\s)/), t = 0;
+    for (var e = [], s = npn.split(/(\.|,|<|>|=|∀|∃|\s)/), t = 0;
         t < s.length; t++) {
         var n = s[t];
         if ("" == n) { }
@@ -142,6 +160,34 @@ function LogicParser(npn) {
                 nstate--;
             }
         }
+        else if (n.match(/∀/)) {
+            var temp1 = e.pop();
+            var temp2 = e.pop();
+            if (1 == state) {
+                return "use wrong Name as variable"
+            }
+            else if (undefined == temp1 || undefined == temp2) {
+                return "Format Error: arguments less than needed"
+            }
+            else {
+                e.push(forallM(temp2, temp1));
+                nstate--;
+            }
+        }
+        else if (n.match(/∃/)) {
+            var temp1 = e.pop();
+            var temp2 = e.pop();
+            if (1 == state) {
+                return "use wrong Name as variable"
+            }
+            else if (undefined == temp1 || undefined == temp2) {
+                return "Format Error: arguments less than needed"
+            }
+            else {
+                e.push(existsM(temp2, temp1));
+                nstate--;
+            }
+        }
         else {
             if (0 == state) {
                 state = 1;
@@ -180,105 +226,117 @@ function ModelGen(np) {
 
     }
     else {
-        var result1 = ModelGen(np.S);
-
-        if (0 == result1.order.length) {
-            if ("<" == result1.value[0]["."]) {
-                result = ModelGen(np[0]);
-            } else {
-                result = ModelGen(np[1]);
-            }
-        }
-        else {
-            var myset = new Set(result1.order);
-
-            var result2 = ModelGen(np[0]);
-            var intersection2 = result2.order.filter(x => myset.has(x));
-
-            var result3 = ModelGen(np[1]);
-            var intersection3 = result3.order.filter(x => myset.has(x));
-
-            var all0 = false;
-            var all1 = false;
-
-            for (let x of result1.value) {
-                if ("<" == x["."]) {
-                    for (let y of result2.value) {
-                        var YesOrNot = true;
-                        for (let z of intersection2) {
-                            if (undefined != x[z] && undefined != y[z] && x[z] != y[z]) {
-                                YesOrNot = false;
-                                break;
-                            }
-                        };
-                        if (YesOrNot) {
-                            var newValue = {};
-                            for (var k in x) {
-                                var item = x[k];
-                                newValue[k] = item;
-                            }
-                            for (let alpha of result2.order) {
-                                if (undefined != y[alpha]) {
-                                    newValue[alpha] = y[alpha];
-                                }
-                            };
-                            newValue["."] = y["."];
-                            if (">" == newValue["."]) {
-                                all1 = true;
-                            } else {
-                                all0 = true;
-                            };
-                            result.value.push(newValue);
-                        }
-                    }
-                }
-                else {
-                    for (let y of result3.value) {
-                        var YesOrNot = true;
-                        for (let z of intersection3) {
-                            if (undefined != x[z] && undefined != y[z] && x[z] != y[z]) {
-                                YesOrNot = false;
-                                break;
-                            }
-                        };
-                        if (YesOrNot) {
-                            var newValue = {};
-                            for (var k in x) {
-                                var item = x[k];
-                                newValue[k] = item;
-                            }
-                            for (let alpha of result3.order) {
-                                if (undefined != y[alpha]) {
-                                    newValue[alpha] = y[alpha];
-                                }
-                            };
-                            newValue["."] = y["."];
-                            if (">" == newValue["."]) {
-                                all1 = true;
-                            } else {
-                                all0 = true;
-                            };
-                            result.value.push(newValue);
-                        }
-                    }
-                }
+        // 处理量化节点 (∀x φ 或 ∃x φ)
+        if (np.Q === "∀" || np.Q === "∃") {
+            var resultSub = ModelGen(np.S);
+            // 移除被量词绑定的变量
+            result.order = resultSub.order.filter(v => v !== np.V);
+            result.value = resultSub.value;
+            result.quantifier = {
+                "type": np.Q,
+                "var": np.V
             };
-            if (all0 && !all1) {
-                result = {
-                    value: [{ ".": "<" }],
-                    order: []
-                }
-            } else if (all1 && !all0) {
-                result = {
-                    value: [{ ".": ">" }],
-                    order: []
+        } else {
+            var result1 = ModelGen(np.S);
+
+            if (0 == result1.order.length) {
+                if ("<" == result1.value[0]["."]) {
+                    result = ModelGen(np[0]);
+                } else {
+                    result = ModelGen(np[1]);
                 }
             }
             else {
-                var tempOrder = new Set(
-                    result1.order.concat(result2.order).concat(result3.order)
-                );
-                result.order = Array.from(tempOrder);
+                var myset = new Set(result1.order);
+
+                var result2 = ModelGen(np[0]);
+                var intersection2 = result2.order.filter(x => myset.has(x));
+
+                var result3 = ModelGen(np[1]);
+                var intersection3 = result3.order.filter(x => myset.has(x));
+
+                var all0 = false;
+                var all1 = false;
+
+                for (let x of result1.value) {
+                    if ("<" == x["."]) {
+                        for (let y of result2.value) {
+                            var YesOrNot = true;
+                            for (let z of intersection2) {
+                                if (undefined != x[z] && undefined != y[z] && x[z] != y[z]) {
+                                    YesOrNot = false;
+                                    break;
+                                }
+                            };
+                            if (YesOrNot) {
+                                var newValue = {};
+                                for (var k in x) {
+                                    var item = x[k];
+                                    newValue[k] = item;
+                                }
+                                for (let alpha of result2.order) {
+                                    if (undefined != y[alpha]) {
+                                        newValue[alpha] = y[alpha];
+                                    }
+                                };
+                                newValue["."] = y["."];
+                                if (">" == newValue["."]) {
+                                    all1 = true;
+                                } else {
+                                    all0 = true;
+                                };
+                                result.value.push(newValue);
+                            }
+                        }
+                    }
+                    else {
+                        for (let y of result3.value) {
+                            var YesOrNot = true;
+                            for (let z of intersection3) {
+                                if (undefined != x[z] && undefined != y[z] && x[z] != y[z]) {
+                                    YesOrNot = false;
+                                    break;
+                                }
+                            };
+                            if (YesOrNot) {
+                                var newValue = {};
+                                for (var k in x) {
+                                    var item = x[k];
+                                    newValue[k] = item;
+                                }
+                                for (let alpha of result3.order) {
+                                    if (undefined != y[alpha]) {
+                                        newValue[alpha] = y[alpha];
+                                    }
+                                };
+                                newValue["."] = y["."];
+                                if (">" == newValue["."]) {
+                                    all1 = true;
+                                } else {
+                                    all0 = true;
+                                };
+                                result.value.push(newValue);
+                            }
+                        }
+                    }
+                };
+                if (all0 && !all1) {
+                    result = {
+                        value: [{ ".": "<" }],
+                        order: []
+                    }
+                } else if (all1 && !all0) {
+                    result = {
+                        value: [{ ".": ">" }],
+                        order: []
+                    }
+                }
+                else {
+                    var tempOrder = new Set(
+                        result1.order.concat(result2.order).concat(result3.order)
+                    );
+                    result.order = Array.from(tempOrder);
+                }
             }
         }
     }
@@ -296,6 +354,20 @@ function ViewGen(pn) {
         linkArray: []
     }
     function ViewGen0(pnp, NodeKey, PortId) {
+        // 处理量化节点
+        if (pnp.quantifier) {
+            countKey++;
+            var NodeKeyNow = countKey;
+            var subPnp = {
+                value: pnp.value,
+                order: pnp.order
+            };
+            var subResult = ViewGen0(subPnp, NodeKeyNow, "IN");
+            return {
+                nodeArray: [{ "key": NodeKeyNow, "type": "QUANT", "qtype": pnp.quantifier.type, "var": pnp.quantifier.var, "name": pnp.quantifier.var }].concat(subResult.nodeArray),
+                linkArray: [{ "from": NodeKeyNow, "frompid": "OUT", "to": NodeKey, "topid": PortId }].concat(subResult.linkArray)
+            };
+        }
         if (1 == pnp.value.length) {
             if ("<" == pnp.value[0]["."]) {
                 return {

@@ -22,6 +22,12 @@ body {
     font-family: TsangerYuYangT03, sans-serif, Arial;
     overflow: hidden;
     display:block;
+    background-color: #f9fafb;
+    transition: background-color 0.3s ease;
+}
+
+.dark body {
+    background-color: #111827;
 }
 
 .app-header {
@@ -69,6 +75,11 @@ background-color: #fff;
     background-color: #f0f8ff;
     z-index: 10;
     overflow: auto;
+    transition: background-color 0.3s ease;
+}
+
+.dark .title-container {
+    background-color: #1f2937;
 }
 
 .left-container {
@@ -80,6 +91,11 @@ background-color: #fff;
     overflow: auto;
     background-color: #f0f8ff;
     z-index: 10;
+    transition: background-color 0.3s ease;
+}
+
+.dark .left-container {
+    background-color: #1f2937;
 }
 
 
@@ -92,6 +108,13 @@ background-color: #fff;
     overflow: hidden;
     border:2px solid #D15DEE;
     box-sizing: border-box;
+    background-color: #ffffff;
+    transition: background-color 0.3s ease;
+}
+
+.dark .main-container {
+    background-color: #1f2937;
+    border-color: #8b5cf6;
 }
 
 #app-resize{
@@ -102,6 +125,10 @@ background-color: #fff;
     bottom: 150px;
     background-color: #eeeeee;
     cursor:ew-resize;    
+    transition: background-color 0.3s ease;
+}
+.dark #app-resize{
+    background-color: #374151;
 }
 #app-resize:hover{
     background-color:#ee5d70;
@@ -119,6 +146,12 @@ background-color: #fff;
     box-sizing: border-box;
     overflow: auto;
     background-color: #f0f8ff;
+    transition: background-color 0.3s ease;
+}
+
+.dark .right-container {
+    background-color: #1f2937;
+    border-color: #ec4899;
 }
 
 /*  Navigator  */
@@ -131,6 +164,98 @@ background-color: #fff;
     height: 150px;
     background-color: #f0f8ff;
     z-index: 10;
+    transition: background-color 0.3s ease;
+}
+
+.dark .bottom-container {
+    background-color: #1f2937;
+}
+
+/* 深色模式下输入框样式 */
+.dark textarea,
+.dark input[type="text"] {
+    background-color: #374151 !important;
+    color: #f9fafb !important;
+    border-color: #4b5563 !important;
+}
+
+/* 深色模式下按钮样式 */
+.dark .w3-light-green {
+    background-color: #065f46 !important;
+}
+.dark .w3-light-blue {
+    background-color: #1e40af !important;
+}
+.dark .w3-yellow {
+    background-color: #b45309 !important;
+}
+
+/* 深色模式下文本颜色 */
+.dark .right-container p,
+.dark .right-container h3,
+.dark .right-container div {
+    color: #e5e7eb;
+}
+
+.dark #status {
+    color: #e5e7eb;
+}
+
+/* 语法提示卡片样式 */
+.syntax-card {
+    background-color: #f3f4f6;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-left: 4px solid #6366f1;
+    font-size: 13px;
+    line-height: 1.6;
+    transition: background-color 0.3s ease;
+}
+
+.dark .syntax-card {
+    background-color: #374151;
+    border-left-color: #8181f5;
+}
+
+.syntax-card h4 {
+    color: #4f46e5;
+    margin-bottom: 6px;
+}
+
+.dark .syntax-card h4 {
+    color: #8181f5;
+}
+
+.syntax-card code {
+    background-color: #e0e7ff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    color: #3730a3;
+    font-size: 12px;
+}
+
+.dark .syntax-card code {
+    background-color: #312e81;
+    color: #c7d2fe;
+}
+
+.syntax-card .example-row {
+    display: flex;
+    align-items: center;
+    margin: 4px 0;
+    gap: 8px;
+}
+
+.syntax-card .example-row .label {
+    min-width: 60px;
+    font-weight: bold;
+    color: #6b7280;
+}
+
+.dark .syntax-card .example-row .label {
+    color: #9ca3af;
 }
 
 
