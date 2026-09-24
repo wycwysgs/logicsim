@@ -389,10 +389,20 @@
                 if (ready) {
                     try {
                         input.value = expr;
-                        app.parseLogic();   // 表达式 → 图形模型
-                        app.load();         // 图形模型 → 电路图
-                        document.body.setAttribute('data-auto-expr', 'done');
-                        document.title = 'LogicSim - ' + expr;
+                        app.parseLogic();   // 表达式 → 图形模型（失败时状态栏显示错误）
+
+                        // 解析失败时不再执行渲染，避免覆盖错误提示
+                        var statusEl = document.getElementById('status');
+                        var parseFailed = statusEl && statusEl.textContent.indexOf('❌') === 0;
+
+                        if (parseFailed) {
+                            document.body.setAttribute('data-auto-expr', 'parse-error');
+                            document.title = 'LogicSim - 表达式解析失败';
+                        } else {
+                            app.load();     // 图形模型 → 电路图
+                            document.body.setAttribute('data-auto-expr', 'done');
+                            document.title = 'LogicSim - ' + expr;
+                        }
                     } catch (e) {
                         document.body.setAttribute('data-auto-expr', 'error');
                     }
