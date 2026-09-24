@@ -1,118 +1,226 @@
-# logicsim
+# LogicSim - 支持量词的逻辑电路模拟器
 
+> 🎓 课程作业：改造 2021 年的旧版逻辑电路模拟器（[原项目](https://kuangdash.gitlab.io/logicsim)）
 
-## Getting started
+一个输入**逆波兰逻辑表达式**即可自动生成**逻辑电路图**的 Web 工具。本次改造在原有**命题逻辑**基础上，新增了**谓词逻辑量词支持**，并将界面升级为现代化的 Tailwind CSS + 深色模式。
 
-本程序可通过直接 git clone 项目后，点击本目录下的 index.html 打开，
+## 🔗 在线演示
 
-也可以直接访问本项目的 [gitlab pages](https://kuangdash.gitlab.io/logicsim)，
+| 项目 | 地址 |
+|------|------|
+| **🌐 网站（GitHub Pages）** | https://wycwysgs.github.io/logicsim/ |
+| **📦 项目仓库（GitHub）** | https://github.com/wycwysgs/logicsim |
+| **📦 项目仓库（GitLab）** | https://gitlab.com/wycwysgs/logicsim |
 
-之后在“解析文本”按钮上面的文本框内输入“逆波兰逻辑表达式”。
+## ✨ 功能特性
 
-“逆波兰逻辑表达式”支持五种逻辑操作符：
-{
-“.”：“a b .”代表“a”和“b”的逻辑与，
-“,”：“a b ,”代表“a”和“b”的逻辑或，
-“<”：“a <”代表“a”的逻辑非，
-“>”：“a b >”代表“a”和“b”的逻辑推出，
+### 1. 命题逻辑（原有功能）
 
-“=”：“a b =”代表“a”和“b”的逻辑等价/同或
-}。
+| 操作符 | RPN 格式 | 含义 |
+|:------:|----------|------|
+| `.` | `a b .` | a **AND** b（逻辑与）|
+| `,` | `a b ,` | a **OR** b（逻辑或）|
+| `<` | `a <` | **NOT** a（逻辑非）|
+| `>` | `a b >` | a **→** b（推出）|
+| `=` | `a b =` | a **↔** b（等价/同或）|
 
-逆波兰逻辑表达式组合的举例说明：
-{
-“a b . fe >”即代表逻辑表达“a 与 b   推出了   fe”，
+### 2. 谓词逻辑量词（🆕 本次改造新增）
 
-“a b . fe ge > =”即代表逻辑表达“a 与 b  等价于  fe 推出了 ge”
-}。
+| 操作符 | RPN 格式 | 含义 |
+|:------:|----------|------|
+| `∀` | `x φ ∀` | **∀x φ**（全称量词）|
+| `∃` | `x φ ∃` | **∃x φ**（存在量词）|
 
-之后点击“解析文本”按钮，将“逆波兰逻辑表达式”转换为适合图形表示的 JSON 格式，
+**谓词表示法**：使用 `_` 连接参数
 
-之后再点击“解析文本”按钮旁的“文本转图”，得到最终的正规图形表示。
+- `P_x` 表示 `P(x)`
+- `R_x_y` 表示 `R(x, y)`
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+### 3. UI 改进（🆕 本次改造）
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+- 🎨 **Tailwind CSS** 现代化界面（替代原 w3.css）
+- 🌙 **深色/浅色主题切换**（自动保存偏好）
+- 📖 **语法提示面板**（含七种操作符说明与示例）
+- 🗺️ 小地图导航 + 可缩放画布
+- ✏️ 元素名称/备注编辑
 
-## Add your files
+## 🚀 使用示例
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+### 输入逆波兰表达式并解析
+
+**命题逻辑：**
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/kuangdash/logicsim.git
-git branch -M main
-git push -uf origin main
+输入：a b . fe >
+输出：(a AND b) → fe
 ```
 
-## Integrate with your tools
+```
+输入：a b . fe ge > =
+输出：(a AND b) ↔ (fe → ge)
+```
 
-* [Set up project integrations](https://gitlab.com/kuangdash/logicsim/-/settings/integrations)
+**谓词逻辑（🆕）：**
 
-## Collaborate with your team
+```
+输入：x P_x Q_x > ∀
+输出：∀x(P(x) → Q(x))
+```
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+```
+输入：x P_x ∃
+输出：∃x P(x)
+```
 
-## Test and Deploy
+```
+输入：x y R_x_y ∃ ∀
+输出：∀x∃y R(x, y)
+```
 
-Use the built-in continuous integration in GitLab.
+### 操作步骤
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+1. 在"解析文本"按钮上方的文本框内输入**逆波兰逻辑表达式**
+2. 点击 **"解析文本"** → 转换为适合图形表示的 JSON 格式
+3. 点击 **"文本转图"** → 得到最终的正规逻辑电路图
+4. （可选）拖动节点调整布局，或点击元素编辑名称/备注
 
-***
+## 🛠️ 技术栈
 
-# Editing this README
+| 层面 | 技术 |
+|------|------|
+| **前端** | 原生 JavaScript（ES5）|
+| **UI 框架** | Tailwind CSS + 自定义 CSS |
+| **图形库** | JointJS + dagre（自动布局）+ graphlib |
+| **依赖** | jQuery、lodash、Backbone.js、select2 |
+| **部署** | GitHub Pages（`gh-pages` 分支）|
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## 📁 项目结构
 
-## Suggestions for a good README
+```
+logicsim/
+├── public/                     # 网站根目录（部署内容）
+│   ├── index.html              # 主页面
+│   ├── LogicParser.js          # 逆波兰表达式解析器（含量词支持）
+│   ├── ViewGen.js              # 逻辑电路图生成器
+│   ├── style.css               # 自定义样式（含深色模式）
+│   ├── latch.json              # 示例数据
+│   ├── assets/
+│   │   ├── forall.svg          # 🆕 ∀ 全称量词图标
+│   │   ├── exists.svg          # 🆕 ∃ 存在量词图标
+│   │   ├── SEL.svg             # 多路选择器图标
+│   │   └── ...                 # 其他元件图标
+│   └── lib/                    # 第三方库
+├── .gitlab-ci.yml              # GitLab CI（Pages 部署配置）
+├── vercel.json                 # Vercel 部署配置
+├── package.json                # Node.js 项目配置
+├── DEPLOYMENT.md               # 部署文档
+└── README.md                   # 本文档
+```
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+## 💻 本地运行
 
-## Name
-Choose a self-explaining name for your project.
+### 方式一：直接打开（最简单）
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+```bash
+git clone https://github.com/wycwysgs/logicsim.git
+cd logicsim
+# 双击 public/index.html 即可在浏览器打开
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### 方式二：启动本地服务器（推荐）
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+```bash
+# 使用 Python
+cd public
+python -m http.server 8000
+# 访问 http://localhost:8000
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+# 或使用 Node.js
+npx http-server public -p 3000
+# 访问 http://localhost:3000
+```
 
-## Usage
+### 方式三：npm 脚本
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+```bash
+npm install
+npm run dev      # 启动本地服务器（端口 3000）
+```
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+## 🚢 部署说明
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+### GitHub Pages（当前使用）
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+```bash
+# 推送主分支
+git push github main
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+# 推送网站文件到 gh-pages 分支
+git subtree push --prefix public github gh-pages
+```
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+启用后访问：`https://<用户名>.github.io/logicsim/`
 
-## License
-For open source projects, say how it is licensed.
+### GitLab Pages
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+`.gitlab-ci.yml` 已配置完成，推送到 GitLab 默认分支后自动部署：
+
+```yaml
+image: alpine:latest
+create-pages:
+  pages:
+    publish: public
+  rules:
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+```
+
+> ⚠️ 注意：GitLab Pages 需要在 **Settings → General → Visibility** 中把 Pages 权限设置为 **Everyone** 才能公开访问。
+
+### Vercel
+
+```bash
+npm install -g vercel
+vercel login
+vercel          # 部署时 Output Directory 选择 public
+```
+
+`vercel.json` 已配置完成。
+
+## 📊 改造对比
+
+| 对比项 | 原版（2021）| 改造版 |
+|--------|-------------|--------|
+| 逻辑操作符 | 5 种（命题逻辑）| **7 种**（+ ∀、∃ 谓词逻辑）|
+| 节点类型 | AND/OR/NOT/IMPLIES/EQUIV | **+ QUANT（量词节点）** |
+| UI 框架 | w3.css | **Tailwind CSS** |
+| 主题 | 仅浅色 | **浅色/深色可切换** |
+| 帮助提示 | 静态文字 | **语法提示面板** |
+| 量词图标 | ❌ | ✅ `forall.svg` / `exists.svg` |
+
+## 📝 更新日志
+
+### v1.0.0 (2026-09-24) - 课程改造版
+
+- ✅ 新增全称量词 `∀` 支持
+- ✅ 新增存在量词 `∃` 支持
+- ✅ 新增 `QUANT` 节点类型与对应图形渲染
+- ✅ 集成 Tailwind CSS，界面现代化
+- ✅ 新增深色/浅色主题切换（偏好持久化）
+- ✅ 新增语法提示面板（含七种操作符与示例）
+- ✅ 添加多平台部署配置（GitHub Pages / GitLab Pages / Vercel）
+
+### v0.1.0 (2021) - 原始版本
+
+- 逆波兰逻辑表达式解析
+- 五种命题逻辑操作符
+- JointJS 电路图自动布局
+
+## 📄 许可证
+
+MIT License
+
+## 🙏 致谢
+
+- 原项目作者：[kuangdash](https://gitlab.com/kuangdash)（[原网站](https://kuangdash.gitlab.io/logicsim)）
+- 图形库：[JointJS](https://www.jointjs.com/) / [dagre](https://github.com/dagrejs/dagre)
+- UI 框架：[Tailwind CSS](https://tailwindcss.com/)
