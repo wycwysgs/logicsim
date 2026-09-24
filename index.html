@@ -68,8 +68,9 @@
     <link href="lib/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" type="text/css" href="style.css" />
 
-    <!-- 字体预加载 -->
-    <link rel="preload" href="lib/TsangerYuYangT-W03.ttf" as="font" type="font/ttf" crossorigin />
+    <!-- 注意：不要 preload lib/TsangerYuYangT-W03.ttf（1.6MB）。
+         该字体已不在界面使用（UI 用系统字体栈、画布文字用 monospace），
+         preload 会强制下载这个用不到的大文件，实测让首屏多等约 40 秒。 -->
 
 
     <!-- dependencies
