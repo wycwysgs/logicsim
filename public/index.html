@@ -334,6 +334,29 @@
             }
         });
 
+        /* ---------- 布局诊断（?diag=1）：检查顶部工具区是否溢出 ---------- */
+        (function () {
+            var diag = null;
+            try { diag = new URLSearchParams(location.search).get('diag'); } catch (e) { }
+            if (!diag) { return; }
+            setTimeout(function () {
+                try {
+                    var header = document.querySelector('.app-header');
+                    var tc = document.querySelector('.title-container');
+                    var body = document.querySelector('.app-body');
+                    var info = [
+                        'header=' + (header ? header.clientHeight : '?'),
+                        'tc.client=' + (tc ? tc.clientHeight : '?'),
+                        'tc.scroll=' + (tc ? tc.scrollHeight : '?'),
+                        'tc.overflow=' + (tc && tc.scrollHeight > tc.clientHeight + 2 ? 'YES' : 'no'),
+                        'body=' + (body ? body.clientHeight : '?'),
+                        'innerH=' + window.innerHeight
+                    ].join('|');
+                    document.documentElement.setAttribute('data-layout-diag', info);
+                } catch (e) { }
+            }, 800);
+        })();
+
         /* ---------- 点击示例填入输入框 ---------- */
         function fillExample(expr) {
             var input = document.getElementById('ReversePol');
