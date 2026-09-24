@@ -197,7 +197,56 @@ vercel          # 部署时 Output Directory 选择 public
 | 帮助提示 | 静态文字 | **语法提示面板** |
 | 量词图标 | ❌ | ✅ `forall.svg` / `exists.svg` |
 
+## 🧪 测试
+
+项目内置解析器回归测试，覆盖全部 7 种操作符与错误处理：
+
+```bash
+node test_parser.cjs
+```
+
+输出示例：
+
+```
+✅ 通过  AND                          "a b ." → 节点 7 个, 连线 7 条
+✅ 通过  全称量词: forall x (P(x) -> Q(x))  "x P_x Q_x > ∀" → 节点 8 个, 连线 8 条
+✅ 通过  嵌套量词: forall x exists y R(x,y) "x y R_x_y ∃ ∀" → 节点 6 个, 连线 5 条
+用例总数: 15, 异常: 0
+```
+
 ## 📝 更新日志
+
+### v1.1.0 (2026-09-24) - 性能优化版
+
+**性能优化（首屏体积 -718KB）**
+
+- ⚡ `joint.js` (1.1MB) → `joint.min.js` (387KB)，压缩率 65%
+- ⚡ 字体添加 `font-display: swap` 与 `preload`，减少文字闪烁
+- 📉 页面总加载从 ~2.7MB 降至 **1.95MB**
+
+**体验优化**
+
+- 🔍 新增页面标题、SEO description、keywords、Open Graph 标签
+- 🖼️ 新增 favicon 引用
+- 🌙 主题初始化前移至 `<head>`，**消除深色模式白屏闪烁 (FOUC)**
+- 🔄 主题跟随系统变化；localStorage 不可用时优雅降级
+- ♿ 主题按钮添加 `aria-label` 无障碍属性
+- 📱 新增窄屏响应式适配（900px / 640px 断点）
+
+**代码质量**
+
+- 🔧 `LogicParser.js` 重构：6 段重复操作符分支合并为**操作符表驱动**（`pop()` 调用 12 → 4 次）
+- 🐛 修复隐式全局变量 bug（`for...of` 缺少 `var` 声明）
+- 🇨🇳 错误提示全部中文化，集中管理于 `LOGIC_ERR`
+- 📖 补充完整 JSDoc 与中文注释
+- 🧹 `style.css` 清理未使用的 `.syntax-card` 死代码
+
+**工程化**
+
+- 📄 新增 `404.html` 自定义错误页
+- 📄 新增 `.gitignore`、`LICENSE` (MIT)
+- 🧪 新增 `test_parser.cjs` 回归测试（15 用例）
+- 📝 README 完善（项目介绍、部署指南、改造对比）
 
 ### v1.0.0 (2026-09-24) - 课程改造版
 

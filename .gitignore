@@ -1,0 +1,40 @@
+# 依赖
+node_modules/
+package-lock.json
+yarn.lock
+
+# 编辑器 / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志与临时文件
+*.log
+npm-debug.log*
+.tmp/
+tmp/
+
+# 部署平台本地配置
+.vercel/
+.netlify/
+.netlify.toml
+
+# 构建产物（当前项目为纯静态，无需构建）
+dist/
+build/
+
+# 本地环境
+.env
+.env.local
+
+# ���Բ���
+baseline.json
+test_output.json
+compare.cjs
