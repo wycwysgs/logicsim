@@ -357,6 +357,54 @@
             }, 800);
         })();
 
+        /* ---------- 导出诊断（?diag=export）：检查导出范围相关 API 与状态 ---------- */
+        (function () {
+            var diag = null;
+            try { diag = new URLSearchParams(location.search).get('diag'); } catch (e) { }
+            if (diag !== 'export') { return; }
+            setTimeout(function () {
+                try {
+                    var out = [];
+                    out.push('graph.getBBox=' + (typeof graph !== 'undefined' && graph.getBBox ? 'yes' : 'no'));
+                    out.push('paper.getContentBBox=' + (paper.getContentBBox ? 'yes' : 'no'));
+                    out.push('paper.scaleContentToFit=' + (paper.scaleContentToFit ? 'yes' : 'no'));
+                    out.push('paper.toDataURL=' + (paper.toDataURL ? 'yes' : 'no'));
+                    out.push('paper.toSVG=' + (paper.toSVG ? 'yes' : 'no'));
+                    if (graph && graph.getBBox) {
+                        var gb = graph.getBBox();
+                        out.push('graphBBox=' + Math.round(gb.x) + ',' + Math.round(gb.y) + ',' + Math.round(gb.width) + 'x' + Math.round(gb.height));
+                    }
+                    if (paper.getContentBBox) {
+                        var cb = paper.getContentBBox();
+                        out.push('contentBBox=' + Math.round(cb.x) + ',' + Math.round(cb.y) + ',' + Math.round(cb.width) + 'x' + Math.round(cb.height));
+                    }
+                    var svg = document.querySelector('#paper svg');
+                    if (svg) {
+                        out.push('svgWH=' + svg.getAttribute('width') + 'x' + svg.getAttribute('height'));
+                        out.push('svgsize=' + Math.round(svg.clientWidth) + 'x' + Math.round(svg.clientHeight));
+                        // 导出尺寸计算验证（修复后应得到真实像素尺寸，而非 100）
+                        var rect = svg.getBoundingClientRect();
+                        var ew = Math.round(rect.width) || svg.clientWidth || 800;
+                        var eh = Math.round(rect.height) || svg.clientHeight || 600;
+                        out.push('exportSize=' + ew + 'x' + eh + '(2x→' + (ew * 2) + 'x' + (eh * 2) + ')');
+                    }
+                    out.push('cells=' + document.querySelectorAll('#paper .joint-cell').length);
+                    out.push('scaleBefore=' + JSON.stringify(paper.scale()));
+                    document.documentElement.setAttribute('data-export-diag', out.join(' | '));
+
+                    // 测试 scaleContentToFit 是否真的改变视图
+                    if (paper.scaleContentToFit) {
+                        paper.scaleContentToFit({ padding: 30 });
+                        document.documentElement.setAttribute('data-export-diag-after',
+                            'scaleAfter=' + JSON.stringify(paper.scale()) +
+                            ' | svgWH=' + (svg ? svg.getAttribute('width') + 'x' + svg.getAttribute('height') : '?'));
+                    }
+                } catch (e) {
+                    document.documentElement.setAttribute('data-export-diag', 'ERROR: ' + e.message);
+                }
+            }, 1500);
+        })();
+
         /* ---------- 点击示例填入输入框 ---------- */
         function fillExample(expr) {
             var input = document.getElementById('ReversePol');
@@ -462,10 +510,21 @@
                 setTimeout(function () {
                     try {
                         var isDark = document.documentElement.classList.contains('dark');
-                        var width = parseFloat(svgEl.getAttribute('width')) || svgEl.clientWidth || 800;
-                        var height = parseFloat(svgEl.getAttribute('height')) || svgEl.clientHeight || 600;
 
-                        var svgString = new XMLSerializer().serializeToString(svgEl);
+                        // 关键修复：paper 的 <svg> 宽高是 "100%"（响应式），
+                        // 直接 parseFloat 会得到 100 而不是真实像素，导致只导出左上角一小块。
+                        // 这里用实际渲染尺寸（clientWidth/Rect）作为导出尺寸。
+                        var rect = svgEl.getBoundingClientRect();
+                        var width = Math.round(rect.width) || svgEl.clientWidth || 800;
+                        var height = Math.round(rect.height) || svgEl.clientHeight || 600;
+
+                        // 克隆 SVG 并写入明确的像素宽高（"100%" 在转图片时会渲染异常）
+                        var svgClone = svgEl.cloneNode(true);
+                        svgClone.setAttribute('width', width);
+                        svgClone.setAttribute('height', height);
+                        svgClone.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+
+                        var svgString = new XMLSerializer().serializeToString(svgClone);
                         if (svgString.indexOf('xmlns=') === -1) {
                             svgString = svgString.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
                         }
@@ -498,7 +557,8 @@
 
                                 restoreView();
                                 if (statusEl) {
-                                    statusEl.textContent = '✅ 电路图已导出为 PNG（' + canvas.width + '×' + canvas.height + '，含全部内容）。';
+                                    statusEl.textContent = '✅ 已导出 PNG：' + canvas.width + '×' + canvas.height +
+                                        '（画布 ' + width + '×' + height + ' @2x）';
                                     statusEl.style.color = '';
                                 }
                             }, 'image/png');
@@ -515,7 +575,7 @@
                         restoreView();
                         alert('导出出错：' + e.message);
                     }
-                }, 250);
+                }, 300);
             } catch (e) {
                 alert('导出 PNG 出错：' + e.message);
             }
